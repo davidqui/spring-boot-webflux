@@ -1,9 +1,10 @@
 package com.springboot.webflux.app.models.documents;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Document(collection="productos")
 public class Producto {
@@ -14,8 +15,9 @@ public class Producto {
 	private String nombre;
 	
 	private Double precio;
-	
-	private Date createAt;
+
+	@DateTimeFormat(pattern = "yyyy-MM-dd")
+	private LocalDate createAt;
 
 	public Producto() {}
 
@@ -42,10 +44,10 @@ public class Producto {
 	public void setPrecio(Double precio) {
 		this.precio = precio;
 	}
-	public Date getCreateAt() {
+	public LocalDate getCreateAt() {
 		return createAt;
 	}
-	public void setCreateAt(Date createAt) {
+	public void setCreateAt(LocalDate  createAt) {
 		this.createAt = createAt;
 	}
 	

@@ -1,5 +1,6 @@
 package com.springboot.webflux.app;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 import org.slf4j.Logger;
@@ -46,7 +47,7 @@ public void run(String... args) throws Exception {
 				new Producto("TV Sony Bravia OLED 4K Ultra HD", 2255.89)
 				)
 		.flatMap(producto -> {
-			producto.setCreateAt(new Date());
+			producto.setCreateAt(LocalDate.now());
 			return dao.save(producto);
 			})
 		.subscribe(producto -> log.info("Insert: " + producto.getId() + " " + producto.getNombre()));
