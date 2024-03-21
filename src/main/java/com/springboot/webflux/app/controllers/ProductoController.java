@@ -9,7 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.bind.support.SessionStatus;
 import org.thymeleaf.spring6.context.webflux.ReactiveDataDriverContextVariable;
 
 import com.springboot.webflux.app.models.documents.Producto;
@@ -17,7 +20,7 @@ import com.springboot.webflux.app.models.documents.Producto;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-
+@SessionAttributes("Producto")
 @Controller
 public class ProductoController {
 
@@ -45,8 +48,35 @@ public class ProductoController {
 		model.addAttribute("titulo", "Formulario de productos");
 		return Mono.just("form");
 	}
-@PostMapping("/form")
-	public Mono<String> guardar (Producto producto){
+
+	/**
+	 *
+	 * @param id
+	 * @param model
+	 * @return
+	 */
+	@GetMapping("/form/{id}")
+	public Mono<String> editar(@PathVariable String id, Model model){
+		Mono<Producto> productoMono = service.findById(id).doOnNext(p -> {
+			log.info("Producto: " + p.getNombre().toUpperCase());
+		}).defaultIfEmpty(new Producto());
+		return productoMono.flatMap(producto -> {
+
+			model.addAttribute("titulo", "Editar productos");
+			model.addAttribute("producto", producto);
+
+			return Mono.just("form");
+		});
+	}
+
+	/**
+	 * Metodo que guarda el producto
+	 * @param producto
+	 * @return
+	 */
+	@PostMapping("/form")
+	public Mono<String> guardar (Producto producto, SessionStatus status) {
+		status.setComplete();// indica que finalizó la sesi
 		return service.save(producto).doOnNext(p -> {
 			log.info("Producto guardado: " + p.getNombre() + p.getId());
 		}).thenReturn("redirect:/listar");
@@ -63,7 +93,12 @@ public class ProductoController {
 		model.addAttribute("titulo", "Listado de productos");
 		return "listar";
 	}
-	
+
+	/**
+	 * @param producto producto
+	 * @param model
+	 * @return 	
+	 */
 	@GetMapping("/listar-full")
 	public String listarFull(Model model) {
 		
