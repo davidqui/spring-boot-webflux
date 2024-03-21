@@ -9,6 +9,7 @@
 
 <div>
 	<form th:action="@{/form}"  method="post" th:object="${producto}">
+		<input th:="${producto.id!= null}" type="hidden" th:field="*{id}" />
 		<div>
 			<a th:href="@{/listar}">volver</a>
 			<label for="nombre">Nombre</label>
@@ -22,7 +23,7 @@
 			<label for="createAt">Fecha</label>
 			<div><input type="date" th:field="*{createAt}"/></div>
 		</div>
-			<div><input type="submit" value="Crear"/></div>
+			<div><input type="submit" th:value="${boton}"/></div>
 		</div>
 	</form>
 

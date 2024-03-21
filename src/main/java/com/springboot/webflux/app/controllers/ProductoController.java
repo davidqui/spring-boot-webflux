@@ -24,98 +24,129 @@ import reactor.core.publisher.Mono;
 @Controller
 public class ProductoController {
 
-	@Autowired
-	private ProductoService service;
-	
-	private static final Logger log = LoggerFactory.getLogger(ProductoController.class);
-	
-	@GetMapping({"/listar", "/"})
-	public Mono<String> listar(Model model) {
-		
-		Flux<Producto> productos = service.findAllConNombreUpperCase();
-		
-		productos.subscribe(prod -> log.info(prod.getNombre()));
-		
-		model.addAttribute("productos", productos);
-		model.addAttribute("titulo", "Listado de productos");
-		return Mono.just("listar");
-	}
+    @Autowired
+    private ProductoService service;
 
-	@GetMapping("/form")
-	public Mono<String> crear (Model model){
+    private static final Logger log = LoggerFactory.getLogger(ProductoController.class);
 
-		model.addAttribute("producto", new Producto());
-		model.addAttribute("titulo", "Formulario de productos");
-		return Mono.just("form");
-	}
+    @GetMapping({"/listar", "/"})
+    public Mono<String> listar(Model model) {
 
-	/**
-	 *
-	 * @param id
-	 * @param model
-	 * @return
-	 */
-	@GetMapping("/form/{id}")
-	public Mono<String> editar(@PathVariable String id, Model model){
-		Mono<Producto> productoMono = service.findById(id).doOnNext(p -> {
-			log.info("Producto: " + p.getNombre().toUpperCase());
-		}).defaultIfEmpty(new Producto());
-		return productoMono.flatMap(producto -> {
+        Flux<Producto> productos = service.findAllConNombreUpperCase();
 
-			model.addAttribute("titulo", "Editar productos");
-			model.addAttribute("producto", producto);
+        productos.subscribe(prod -> log.info(prod.getNombre()));
 
-			return Mono.just("form");
-		});
-	}
+        model.addAttribute("productos", productos);
+        model.addAttribute("titulo", "Listado de productos");
+        return Mono.just("listar");
+    }
 
-	/**
-	 * Metodo que guarda el producto
-	 * @param producto
-	 * @return
-	 */
-	@PostMapping("/form")
-	public Mono<String> guardar (Producto producto, SessionStatus status) {
-		status.setComplete();// indica que finalizó la sesi
-		return service.save(producto).doOnNext(p -> {
-			log.info("Producto guardado: " + p.getNombre() + p.getId());
-		}).thenReturn("redirect:/listar");
-	}
+    @GetMapping("/form")
+    public Mono<String> crear(Model model) {
 
-	@GetMapping("/listar-datadriver")
-	public String listarDataDriver(Model model) {
-		
-		Flux<Producto> productos = service.findAllConNombreUpperCase().delayElements(Duration.ofSeconds(1));
-		
-		productos.subscribe(prod -> log.info(prod.getNombre()));
-		
-		model.addAttribute("productos", new ReactiveDataDriverContextVariable(productos, 1));
-		model.addAttribute("titulo", "Listado de productos");
-		return "listar";
-	}
+        model.addAttribute("producto", new Producto());
+        model.addAttribute("titulo", "Formulario de productos");
+        model.addAttribute("boton", "Crear");
+        return Mono.just("form");
+    }
 
-	/**
-	 * @param producto producto
-	 * @param model
-	 * @return 	
-	 */
-	@GetMapping("/listar-full")
-	public String listarFull(Model model) {
-		
-		Flux<Producto> productos = service.findAllConNombreUpperCaseRepeat();
-		
-		model.addAttribute("productos", productos);
-		model.addAttribute("titulo", "Listado de productos");
-		return "listar";
-	}
-	
-	@GetMapping("/listar-chunked")
-	public String listarChunked(Model model) {
-		
-		Flux<Producto> productos = service.findAllConNombreUpperCaseRepeat();
-		
-		model.addAttribute("productos", productos);
-		model.addAttribute("titulo", "Listado de productos");
-		return "listar-chunked";
-	}
+    /**
+     * Meto de editar productos de una forma mas reactiva
+     *
+     * @param id
+     * @param model
+     * @return
+     */
+    @GetMapping("/form-v2/{id}")
+    public Mono<String> editarV2(@PathVariable String id, Model model) {
+        return service.findById(id).doOnNext(p -> {
+                    log.info("Producto: " + p.getNombre());
+                    model.addAttribute("boton", "Editar");
+                    model.addAttribute("titulo", "Editar productos");
+                    model.addAttribute("producto", p);
+                }).defaultIfEmpty(new Producto())
+                .flatMap(p -> {
+                    if (p.getId() == null) {
+                        return Mono.error(new InterruptedException("No existe el producto"));
+                    }
+                    return Mono.just(p);
+                })
+                .then(Mono.just("form"))
+                .onErrorResume(ex -> Mono.just("redirect:/listar?error=no+existe+el+producto"));
+
+    }
+
+
+    /**
+     * Meto de editar productos
+     *
+     * @param id
+     * @param model
+     * @return
+     */
+    @GetMapping("/form/{id}")
+    public Mono<String> editar(@PathVariable String id, Model model) {
+        Mono<Producto> productoMono = service.findById(id).doOnNext(p -> {
+            log.info("Producto: " + p.getNombre().toUpperCase());
+        }).defaultIfEmpty(new Producto());
+        return productoMono.flatMap(producto -> {
+
+            model.addAttribute("titulo", "Editar productos");
+            model.addAttribute("boton", "Editar");
+            model.addAttribute("producto", producto);
+
+            return Mono.just("form");
+        });
+    }
+
+    /**
+     * Metodo que guarda el producto
+     *
+     * @param producto
+     * @return
+     */
+    @PostMapping("/form")
+    public Mono<String> guardar(Producto producto, SessionStatus status) {
+        status.setComplete();// indica que finalizó la sesi
+        return service.save(producto).doOnNext(p -> {
+            log.info("Producto guardado: " + p.getNombre() + p.getId());
+        }).thenReturn("redirect:/listar");
+    }
+
+    @GetMapping("/listar-datadriver")
+    public String listarDataDriver(Model model) {
+
+        Flux<Producto> productos = service.findAllConNombreUpperCase().delayElements(Duration.ofSeconds(1));
+
+        productos.subscribe(prod -> log.info(prod.getNombre()));
+
+        model.addAttribute("productos", new ReactiveDataDriverContextVariable(productos, 1));
+        model.addAttribute("titulo", "Listado de productos");
+        return "listar";
+    }
+
+    /**
+     * @param producto producto
+     * @param model
+     * @return
+     */
+    @GetMapping("/listar-full")
+    public String listarFull(Model model) {
+
+        Flux<Producto> productos = service.findAllConNombreUpperCaseRepeat();
+
+        model.addAttribute("productos", productos);
+        model.addAttribute("titulo", "Listado de productos");
+        return "listar";
+    }
+
+    @GetMapping("/listar-chunked")
+    public String listarChunked(Model model) {
+
+        Flux<Producto> productos = service.findAllConNombreUpperCaseRepeat();
+
+        model.addAttribute("productos", productos);
+        model.addAttribute("titulo", "Listado de productos");
+        return "listar-chunked";
+    }
 }
