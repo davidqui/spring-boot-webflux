@@ -1,13 +1,17 @@
 package com.springboot.webflux.app.controllers;
 
 import java.time.Duration;
+import java.time.LocalDate;
+import java.util.Date;
 
 import com.springboot.webflux.app.models.services.ProductoService;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,7 +24,7 @@ import com.springboot.webflux.app.models.documents.Producto;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@SessionAttributes("Producto")
+@SessionAttributes("producto")
 @Controller
 public class ProductoController {
 
@@ -106,11 +110,21 @@ public class ProductoController {
      * @return
      */
     @PostMapping("/form")
-    public Mono<String> guardar(Producto producto, SessionStatus status) {
-        status.setComplete();// indica que finalizó la sesi
-        return service.save(producto).doOnNext(p -> {
-            log.info("Producto guardado: " + p.getNombre() + p.getId());
-        }).thenReturn("redirect:/listar");
+    public Mono<String> guardar(@Valid Producto producto, BindingResult result, Model model, SessionStatus status) {
+        if (result.hasErrors()) {
+            model.addAttribute("titulo", "Errores en el formulario de producto");
+            model.addAttribute("boton", "Guardar");
+            return Mono.just("form");
+        } else {
+            status.setComplete();// indica que finalizó la sesion
+            if (producto.getCreateAt() == null) {
+                producto.setCreateAt(LocalDate.now());
+            }
+            return service.save(producto).doOnNext(p -> {
+                log.info("Producto guardado: " + p.getNombre() + p.getId());
+            }).thenReturn("redirect:/listar?success=producto+guardado+con+exito");
+        }
+
     }
 
     @GetMapping("/listar-datadriver")
@@ -126,7 +140,6 @@ public class ProductoController {
     }
 
     /**
-     * @param producto producto
      * @param model
      * @return
      */
