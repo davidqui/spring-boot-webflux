@@ -103,6 +103,24 @@ public class ProductoController {
         });
     }
 
+    @GetMapping("/eliminar/{id}")
+    public Mono<String> eliminar(@PathVariable String id, Model model) {
+        return service.findById(id).defaultIfEmpty(new Producto())
+                .flatMap(p -> {
+                    if (p.getId() == null) {
+                        return Mono.error(new InterruptedException("No existe el producto a eliminar"));
+                    }
+                    return Mono.just(p);
+                })
+                .flatMap(p -> {
+                    log.info("Eliminando producto: " + p.getNombre());
+                    log.info("Eliminando producto Id : " + p.getId());
+                    return service.delete(p);
+                }).then(Mono.just("redirect:/listar?success=producto+eliminado+con+exito"))
+                .onErrorResume(ex -> Mono.just("redirect:/listar?error=no+existe+el+producto+a+eliminar"));
+        
+    }
+
     /**
      * Metodo que guarda el producto
      *
