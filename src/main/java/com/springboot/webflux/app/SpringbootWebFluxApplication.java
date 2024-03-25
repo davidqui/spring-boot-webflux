@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.util.Date;
 
 import com.springboot.webflux.app.models.documents.Categoria;
-import com.springboot.webflux.app.models.services.ProductoServiceImpl;
+import com.springboot.webflux.app.models.services.ProductoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +19,7 @@ import reactor.core.publisher.Flux;
 public class SpringbootWebFluxApplication implements CommandLineRunner {
 
     @Autowired
-    private ProductoServiceImpl service;
+    private ProductoService service;
 
     @Autowired
     private ReactiveMongoTemplate mongoTemplate;
