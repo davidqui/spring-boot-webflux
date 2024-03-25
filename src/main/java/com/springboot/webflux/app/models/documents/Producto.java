@@ -1,5 +1,6 @@
 package com.springboot.webflux.app.models.documents;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.annotation.Id;
@@ -23,6 +24,7 @@ public class Producto {
 	@DateTimeFormat(pattern = "yyyy-MM-dd")
 	private LocalDate createAt;
 
+	@Valid
 	private Categoria categoria;
 
 	public Producto() {}

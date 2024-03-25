@@ -7,9 +7,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "categories")
 public class Categoria {
     @Id
-    private String id;
     @NotEmpty
+    private String id;
     private String nombre;
+
     public Categoria() {
     }
 

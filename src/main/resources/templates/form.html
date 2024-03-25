@@ -30,11 +30,10 @@
             <label for="categoria.id">Categoría</label>
             <div><select th:field="*{categoria.id}">
                 <option>-- seleccionar --</option>
-                <option th:each="categoria : ${categorias}" th:value="${categoria.id}"
-                        th:text="${categoria.nombre}"></option>
+                <option th:each="categoria : ${categorias}" th:value="${categoria.id}" th:text="${categoria.nombre}"></option>
             </select>
-                <small th:if="${#fields.hasErrors('categoria.id')}" th:errors="*{categoria.id}"></small>
             </div>
+            <small th:if="${#fields.hasErrors('categoria.id')}" th:errors="*{categoria.id}"></small>
         </div>
         <div><input type="submit" th:value="${boton}"/></div>
 </div>

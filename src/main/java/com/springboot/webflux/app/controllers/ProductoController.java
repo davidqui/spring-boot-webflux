@@ -32,7 +32,7 @@ public class ProductoController {
     private static final Logger log = LoggerFactory.getLogger(ProductoController.class);
 
     @ModelAttribute("categorias")
-    public Flux<Categoria> categorias () {
+    public Flux<Categoria> categorias() {
         return service.findAllCategoria();
     }
 
@@ -121,7 +121,7 @@ public class ProductoController {
                     return service.delete(p);
                 }).then(Mono.just("redirect:/listar?success=producto+eliminado+con+exito"))
                 .onErrorResume(ex -> Mono.just("redirect:/listar?error=no+existe+el+producto+a+eliminar"));
-        
+
     }
 
     /**
@@ -138,12 +138,18 @@ public class ProductoController {
             return Mono.just("form");
         } else {
             status.setComplete();// indica que finalizó la sesion
-            if (producto.getCreateAt() == null) {
-                producto.setCreateAt(LocalDate.now());
-            }
-            return service.save(producto).doOnNext(p -> {
-                log.info("Producto guardado: " + p.getNombre() + p.getId());
-            }).thenReturn("redirect:/listar?success=producto+guardado+con+exito");
+            Mono<Categoria> categoria = service.findCategoriaById(producto.getCategoria().getId());
+            return categoria.flatMap(c -> {
+                        if (producto.getCreateAt() == null) {
+                            producto.setCreateAt(LocalDate.now());
+                        }
+                        producto.setCategoria(c);
+                        return service.save(producto);
+                    })
+                    .doOnNext(p -> {
+                        log.info("Categoria asignada: " + p.getCategoria().getNombre() +  p.getCategoria().getId());
+                        log.info("Producto guardado: " + p.getNombre() + p.getId());
+                    }).thenReturn("redirect:/listar?success=producto+guardado+con+exito");
         }
 
     }
