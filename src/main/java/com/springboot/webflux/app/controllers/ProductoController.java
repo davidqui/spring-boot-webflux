@@ -1,8 +1,10 @@
 package com.springboot.webflux.app.controllers;
 
+import java.io.File;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.UUID;
 
 import com.springboot.webflux.app.models.documents.Categoria;
 import com.springboot.webflux.app.models.services.ProductoService;
@@ -10,6 +12,8 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -28,6 +32,9 @@ public class ProductoController {
 
     @Autowired
     private ProductoService service;
+
+    @Value("${config.uploads.path}")
+    private String path;
 
     private static final Logger log = LoggerFactory.getLogger(ProductoController.class);
 
@@ -131,7 +138,7 @@ public class ProductoController {
      * @return
      */
     @PostMapping("/form")
-    public Mono<String> guardar(@Valid Producto producto, BindingResult result, Model model, SessionStatus status) {
+    public Mono<String> guardar(@Valid Producto producto, BindingResult result, Model model, @RequestPart FilePart file, SessionStatus status) {
         if (result.hasErrors()) {
             model.addAttribute("titulo", "Errores en el formulario de producto");
             model.addAttribute("boton", "Guardar");
@@ -143,13 +150,27 @@ public class ProductoController {
                         if (producto.getCreateAt() == null) {
                             producto.setCreateAt(LocalDate.now());
                         }
+                        if(!file.filename().isEmpty()){
+                            producto.setFoto(UUID.randomUUID().toString() + " " + file.filename()
+                                    .replace(" ", "")
+                                    .replace(":", "") // Hacks para que funcione en Micropsoft Edge
+                                    .replace("\\", ""));
+                            return service.save(producto);
+                        }
                         producto.setCategoria(c);
                         return service.save(producto);
                     })
                     .doOnNext(p -> {
                         log.info("Categoria asignada: " + p.getCategoria().getNombre() +  p.getCategoria().getId());
                         log.info("Producto guardado: " + p.getNombre() + p.getId());
-                    }).thenReturn("redirect:/listar?success=producto+guardado+con+exito");
+                    })
+                    .flatMap(p -> {
+                        if(!file.filename().isEmpty()){
+                            return file.transferTo(new File(path + p.getFoto()));
+                        }
+                        return Mono.empty();
+                    })
+                    .thenReturn("redirect:/listar?success=producto+guardado+con+exito");
         }
 
     }
